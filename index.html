@@ -57,7 +57,18 @@
     <section id="etiquetado" class="tabpage">
       <section class="panel label-panel">
         <h2>Generador de etiquetas POS</h2>
-        <p class="hint">Etiqueta final: <b>2 pulgadas x 1.5 pulgadas</b>. Solo imprime <b>Botón POS</b> + <b>QR</b> con SKU POS.</p>
+        <p class="hint">Etiqueta final: <b>2 pulgadas x 1.5 pulgadas</b>. Flujo lineal: <b>abrir cámara</b>, leer SKU, validar producto, colocar piezas y continuar. La etiqueta imprime <b>Botón POS</b>, <b>Nombre POS | Precio</b> y <b>QR</b>.</p>
+        <div class="label-camera">
+          <div class="camera-head"><h3>Escaneo rápido para etiquetado</h3><span id="labelOcrStatus">Listo</span></div>
+          <video id="labelVideo" playsinline muted></video>
+          <canvas id="labelSnapshot" hidden></canvas>
+          <div class="actions">
+            <button id="labelStartCamera">Abrir cámara</button>
+            <button id="labelScanBtn" disabled>Leer SKU #</button>
+            <button id="labelStopCamera" disabled>Detener</button>
+          </div>
+          <p class="hint">Escanea, valida el nombre, escribe piezas y presiona <b>Agregar etiquetas</b>. Después continúa con el siguiente artículo.</p>
+        </div>
         <div class="label-grid">
           <div>
             <label for="labelSku">SKU # de etiqueta</label>
@@ -69,7 +80,7 @@
           </div>
           <div class="align-end"><button id="labelAddBtn">Agregar etiquetas</button></div>
         </div>
-        <div id="labelPreview" class="label-preview empty-small">Busca o agrega un SKU para preparar etiquetas.</div>
+        <div id="labelPreview" class="label-preview empty-small">Escanea o escribe un SKU para preparar etiquetas.</div>
       </section>
 
       <section class="panel cart-panel">

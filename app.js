@@ -3,6 +3,7 @@
   const products = window.PRODUCTS || [];
   const bySku = new Map(products.map(p => [normalizeSku(p.skuIntl), p]));
   let stream = null;
+  let labelStream = null;
   let currentProduct = null;
   const labelItems = [];
 
@@ -10,6 +11,7 @@
   function cleanMoney(v){ return String(v || '').trim(); }
   function moneyTier(p){ return Object.entries(p.tier || {}).filter(([,v]) => cleanMoney(v)).map(([k,v]) => `${k}: ${v}`); }
   function firstTier(p){ return moneyTier(p)[0] || '-'; }
+  function priceOnly(p){ const ft = firstTier(p); return ft.includes(':') ? ft.split(':').slice(1).join(':').trim() : ft; }
 
   function inferCampaign(p){
     const name = String(p.nombrePos || p.nombreInventario || '').trim();
@@ -116,7 +118,7 @@
   function renderLabelPreview(p){
     if (!p) { $('labelPreview').className = 'label-preview empty-small'; $('labelPreview').textContent = 'SKU no encontrado para etiquetado.'; return; }
     $('labelPreview').className = 'label-preview';
-    $('labelPreview').innerHTML = `<div class="preview-card"><div><b>${posButton(p)}</b><small>${p.nombrePos || ''} · SKU POS ${p.skuPos || '-'}</small></div>${p.qrData ? `<img class="mini-qr" src="${p.qrData}" alt="QR">` : ''}</div>`;
+    $('labelPreview').innerHTML = `<div class="preview-card"><div><b>${posButton(p)}</b><small>${p.nombrePos || ''} | ${priceOnly(p)} · SKU POS ${p.skuPos || '-'}</small></div>${p.qrData ? `<img class="mini-qr" src="${p.qrData}" alt="QR">` : ''}</div>`;
   }
 
   function addLabel(rawSku, qty){
@@ -128,6 +130,8 @@
     const existing = labelItems.find(x => String(x.product.skuPos || x.product.skuIntl) === key);
     if (existing) existing.qty += safeQty; else labelItems.push({product:p, qty:safeQty});
     renderCart();
+    $('labelQty').value = 1;
+    $('labelSku').select();
   }
 
   function renderCart(){
@@ -138,13 +142,17 @@
     $('labelCart').className = 'cart';
     $('labelCart').innerHTML = labelItems.map((x,i)=>`
       <div class="cart-row">
-        <div><strong>${posButton(x.product)}</strong><small>${x.product.nombrePos || ''}</small></div>
+        <div><strong>${posButton(x.product)}</strong><small>${x.product.nombrePos || ''} | ${priceOnly(x.product)}</small></div>
         <div class="sku-col"><small>SKU POS</small><b>${x.product.skuPos || '-'}</b></div>
         <input data-i="${i}" class="qtyEdit" type="number" min="1" max="500" value="${x.qty}">
         <button class="remove" data-remove="${i}">×</button>
       </div>`).join('');
     document.querySelectorAll('.qtyEdit').forEach(inp => inp.addEventListener('change', e => { labelItems[Number(e.target.dataset.i)].qty = Math.max(1, Number(e.target.value)||1); renderCart(); }));
     document.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', e => { labelItems.splice(Number(e.target.dataset.remove),1); renderCart(); }));
+  }
+
+  function splitText(doc, text, maxWidth){
+    return doc.splitTextToSize(String(text || ''), maxWidth);
   }
 
   function generatePdf(){
@@ -161,13 +169,45 @@
       const pos = n % (cols*rows), col = pos % cols, row = Math.floor(pos / cols);
       const x = marginX + col * (labelW + gapX), y = marginY + row * (labelH + gapY);
       doc.setDrawColor(190,170,130); doc.setLineWidth(0.01); doc.roundedRect(x,y,labelW,labelH,0.08,0.08);
-      doc.setFont('helvetica','bold'); doc.setTextColor(0,72,51); doc.setFontSize(13);
-      const title = posButton(p);
-      doc.text(title, x + labelW/2, y + 0.24, {align:'center', maxWidth:labelW-0.16});
-      if (p.qrData) doc.addImage(p.qrData, 'PNG', x + 0.48, y + 0.38, 1.04, 1.04);
+      doc.setTextColor(0,72,51); doc.setFont('helvetica','bold'); doc.setFontSize(12.5);
+      doc.text(posButton(p), x + labelW/2, y + 0.20, {align:'center', maxWidth:labelW-0.12});
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(35,43,38);
+      const line = `${p.nombrePos || ''} | ${priceOnly(p)}`;
+      const lines = splitText(doc, line, labelW - 0.14).slice(0,2);
+      doc.text(lines, x + labelW/2, y + 0.36, {align:'center'});
+      if (p.qrData) doc.addImage(p.qrData, 'PNG', x + 0.58, y + 0.58, 0.84, 0.84);
       n++;
     });
     doc.save(`CodeBrew_Etiquetas_${expanded.length}_pzas.pdf`);
+  }
+
+  async function openCamera(videoId, statusId, startId, scanId, stopId, mode){
+    try{
+      const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}, audio:false});
+      if (mode === 'label') labelStream = s; else stream = s;
+      $(videoId).srcObject = s; await $(videoId).play();
+      $(scanId).disabled = false; $(stopId).disabled = false; $(startId).disabled = true; $(statusId).textContent = 'Cámara activa';
+    }catch(err){ $(statusId).textContent = 'Sin permiso de cámara'; alert('No se pudo abrir la cámara. En GitHub Pages debe abrirse con HTTPS y permiso de cámara.'); }
+  }
+
+  function closeCamera(videoId, statusId, startId, scanId, stopId, mode){
+    const s = mode === 'label' ? labelStream : stream;
+    if(s) s.getTracks().forEach(t => t.stop());
+    if (mode === 'label') labelStream = null; else stream = null;
+    $(videoId).srcObject = null; $(scanId).disabled = true; $(stopId).disabled = true; $(startId).disabled = false; $(statusId).textContent = 'Listo';
+  }
+
+  async function scanFromCamera(videoId, canvasId, statusId, scanBtnId, targetInputId, mode){
+    const video = $(videoId), canvas = $(canvasId), ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    $(statusId).textContent = 'Leyendo texto...'; $(scanBtnId).disabled = true;
+    try{
+      if (!window.Tesseract) throw new Error('OCR no cargó');
+      const { data:{ text } } = await Tesseract.recognize(canvas, 'eng', { logger:m => { if(m.status) $(statusId).textContent = Math.round((m.progress || 0) * 100) + '% OCR'; }});
+      const sku = extractSku(text); $(targetInputId).value = sku;
+      if (mode === 'label') renderLabelPreview(productBySku(sku)); else (sku ? searchSku(sku) : renderNotFound(''));
+    }catch(e){ if (mode === 'label') renderLabelPreview(null); else renderNotFound('Error OCR'); }
+    $(statusId).textContent = 'Listo'; $(scanBtnId).disabled = false;
   }
 
   function init(){
@@ -180,28 +220,14 @@
     $('clearLabels').addEventListener('click', () => { labelItems.length = 0; renderCart(); });
     $('pdfLabels').addEventListener('click', generatePdf);
 
-    $('startCamera').addEventListener('click', async () => {
-      try{
-        stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}, audio:false});
-        $('video').srcObject = stream; await $('video').play();
-        $('scanBtn').disabled = false; $('stopCamera').disabled = false; $('startCamera').disabled = true; $('ocrStatus').textContent = 'Cámara activa';
-      }catch(err){ $('ocrStatus').textContent = 'Sin permiso de cámara'; alert('No se pudo abrir la cámara. En GitHub Pages debe abrirse con HTTPS y permiso de cámara.'); }
-    });
-    $('stopCamera').addEventListener('click', () => {
-      if(stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('video').srcObject = null;
-      $('scanBtn').disabled = true; $('stopCamera').disabled = true; $('startCamera').disabled = false; $('ocrStatus').textContent = 'Listo';
-    });
-    $('scanBtn').addEventListener('click', async () => {
-      const video = $('video'), canvas = $('snapshot'), ctx = canvas.getContext('2d');
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      $('ocrStatus').textContent = 'Leyendo texto...'; $('scanBtn').disabled = true;
-      try{
-        if (!window.Tesseract) throw new Error('OCR no cargó');
-        const { data:{ text } } = await Tesseract.recognize(canvas, 'eng', { logger:m => { if(m.status) $('ocrStatus').textContent = Math.round((m.progress || 0) * 100) + '% OCR'; }});
-        const sku = extractSku(text); $('manualSku').value = sku; sku ? searchSku(sku) : renderNotFound('');
-      }catch(e){ renderNotFound('Error OCR'); }
-      $('ocrStatus').textContent = 'Listo'; $('scanBtn').disabled = false;
-    });
+    $('startCamera').addEventListener('click', () => openCamera('video','ocrStatus','startCamera','scanBtn','stopCamera','consulta'));
+    $('stopCamera').addEventListener('click', () => closeCamera('video','ocrStatus','startCamera','scanBtn','stopCamera','consulta'));
+    $('scanBtn').addEventListener('click', () => scanFromCamera('video','snapshot','ocrStatus','scanBtn','manualSku','consulta'));
+
+    $('labelStartCamera').addEventListener('click', () => openCamera('labelVideo','labelOcrStatus','labelStartCamera','labelScanBtn','labelStopCamera','label'));
+    $('labelStopCamera').addEventListener('click', () => closeCamera('labelVideo','labelOcrStatus','labelStartCamera','labelScanBtn','labelStopCamera','label'));
+    $('labelScanBtn').addEventListener('click', () => scanFromCamera('labelVideo','labelSnapshot','labelOcrStatus','labelScanBtn','labelSku','label'));
+
     if('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
   }
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();

@@ -1,16 +1,15 @@
-# CodeBrew Merch POS 2.0
+# CodeBrew 2.0 · Merch POS
 
 PWA lista para GitHub Pages.
 
-## Mejoras 2.0
-- Pestaña **Consulta** con SKU leído, Botón POS/Campaña, SKU POS, Código DIA, Nombre POS, precio, código de barras y QR.
-- Se retiró el texto de base cargada y el texto “Codifica únicamente SKU POS”.
-- Pestaña **Etiquetado** para agregar SKUs y piezas.
-- Genera PDF con etiquetas de **2 x 1.5 pulgadas** con **Botón POS + QR**.
+## Mejoras incluidas
 
-## Uso
-1. Sube todos los archivos a tu repositorio GitHub.
-2. Activa GitHub Pages.
-3. Abre la URL HTTPS en celular o PC.
-4. En Consulta busca o escanea SKU #.
-5. En Etiquetado agrega piezas y genera PDF.
+- Pestaña **Consulta**: búsqueda por SKU de etiqueta, OCR con cámara, botón/campaña POS, precio, SKU POS, código de barras y QR.
+- Pestaña **Etiquetado**: flujo lineal con cámara para escanear SKU, validar producto, capturar piezas y agregar más modelos.
+- Exportación PDF con etiquetas de **2 x 1.5 pulgadas**.
+- Cada etiqueta imprime: **Botón POS**, **Nombre POS | Precio** y **QR con SKU POS**.
+
+## Publicación
+
+Sube todos los archivos a tu repositorio `CodeBrew_Merch` en GitHub Pages.
+
