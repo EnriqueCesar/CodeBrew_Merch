@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
   <script src="data/products.js" defer></script>
   <script src="app.js" defer></script>
@@ -29,12 +30,12 @@
   <main>
     <section id="consulta" class="tabpage active">
       <section class="panel search-panel">
-        <label for="manualSku">SKU # de etiqueta</label>
+        <label for="manualSku">Buscar por SKU #, SKU POS, Código DIA o Nombre Inventario</label>
         <div class="search-row">
-          <input id="manualSku" inputmode="numeric" placeholder="Ej. 011178945" autocomplete="off" />
+          <input id="manualSku" placeholder="Ej. 011178945, 58828 o WC26SSCC24Grad" autocomplete="off" />
           <button id="manualBtn">Buscar</button>
         </div>
-        <small>Lee el número después de <b>SKU #</b> y elimina ceros iniciales automáticamente.</small>
+        <small>También funciona cuando el SKU INTL viene como <b>NA</b>: busca por <b>Nombre POS</b> o <b>Nombre Inventario</b>.</small>
       </section>
 
       <section class="panel camera-panel">
@@ -46,18 +47,23 @@
           <button id="scanBtn" disabled>Leer SKU #</button>
           <button id="stopCamera" disabled>Detener</button>
         </div>
-        <p class="hint">Enfoca la etiqueta donde diga <b>SKU # 011...</b>. Si no reconoce, escribe el número manualmente.</p>
+        <p class="hint">Enfoca la etiqueta donde diga <b>SKU # 011...</b>. Si no reconoce, escribe SKU, Código DIA o Nombre Inventario.</p>
       </section>
 
       <section id="result" class="result empty">
-        <div class="empty-card">Escanea o escribe un SKU para ver botón POS, precio, código de barras y QR.</div>
+        <div class="empty-card">Escanea o escribe un SKU para ver Botón POS, precio y código para escanear en POS.</div>
       </section>
     </section>
 
     <section id="etiquetado" class="tabpage">
       <section class="panel label-panel">
         <h2>Generador de etiquetas POS</h2>
-        <p class="hint">Etiqueta final: <b>2 pulgadas x 1.5 pulgadas</b>. Flujo lineal: <b>abrir cámara</b>, leer SKU, validar producto, colocar piezas y continuar. La etiqueta imprime <b>Botón POS</b>, <b>Nombre POS | Precio</b> y <b>QR</b>.</p>
+        <div class="guide">
+          <div><b>1</b><span>Escanea o busca el SKU del artículo.</span></div>
+          <div><b>2</b><span>Valida nombre, precio y Botón POS.</span></div>
+          <div><b>3</b><span>Coloca piezas, agrega y continúa con el siguiente modelo.</span></div>
+          <div><b>4</b><span>Genera PDF para imprimir etiquetas 2” x 1.5”.</span></div>
+        </div>
         <div class="label-camera">
           <div class="camera-head"><h3>Escaneo rápido para etiquetado</h3><span id="labelOcrStatus">Listo</span></div>
           <video id="labelVideo" playsinline muted></video>
@@ -67,16 +73,20 @@
             <button id="labelScanBtn" disabled>Leer SKU #</button>
             <button id="labelStopCamera" disabled>Detener</button>
           </div>
-          <p class="hint">Escanea, valida el nombre, escribe piezas y presiona <b>Agregar etiquetas</b>. Después continúa con el siguiente artículo.</p>
+          <p class="hint">Flujo lineal: escanear → validar → piezas → agregar etiquetas → siguiente artículo.</p>
         </div>
         <div class="label-grid">
           <div>
-            <label for="labelSku">SKU # de etiqueta</label>
-            <input id="labelSku" inputmode="numeric" placeholder="Ej. 011178945" autocomplete="off" />
+            <label for="labelSku">SKU / Nombre para etiqueta</label>
+            <input id="labelSku" placeholder="Ej. 011178945 o WC26Stan20IceF" autocomplete="off" />
           </div>
           <div>
             <label for="labelQty">Piezas</label>
             <input id="labelQty" inputmode="numeric" type="number" min="1" max="500" value="1" />
+          </div>
+          <div>
+            <label for="labelTier">Tier</label>
+            <select id="labelTier"><option value="C1">C1</option></select>
           </div>
           <div class="align-end"><button id="labelAddBtn">Agregar etiquetas</button></div>
         </div>
