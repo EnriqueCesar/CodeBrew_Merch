@@ -13,6 +13,26 @@
     return Object.entries(t).filter(([,v]) => String(v || '').trim()).map(([k,v]) => `${k}: ${v}`);
   }
 
+  function inferCampaign(p){
+    const name = String(p.nombrePos || p.nombreInventario || '').trim();
+    const base = String(p.base || '').toLowerCase();
+    if (/discovery|^disc|^totebag/i.test(name) || base.includes('discovery')) return 'Discovery';
+    if (/^wc/i.test(name)) return 'World Cup';
+    if (/^sp/i.test(name)) return 'Spring';
+    if (/^wt/i.test(name)) return 'Winter';
+    if (/^fl/i.test(name)) return 'Fall';
+    if (/^xm/i.test(name)) return 'Christmas';
+    if (/^cor/i.test(name)) return 'Essentials';
+    return p.campana || p.campaign || p.base || 'Campaña';
+  }
+
+  function posRoute(p){
+    const campaign = inferCampaign(p);
+    const boton = String(p.botonPos || 'MERCH').replace(/\s+/g, ' ').trim();
+    const merchBtn = boton.includes('DISCOVERY') ? 'Mercancía → Discovery' : `Mercancía → ${campaign}`;
+    return merchBtn;
+  }
+
   function extractSku(text){
     const clean = String(text || '').replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
     const skuLine = clean.match(/SKU\s*#?\s*[:\-]?\s*(0?\d[\d\s\-]{6,14})/i);
@@ -51,21 +71,24 @@
   function renderProduct(p, sourceSku){
     const tiers = moneyTier(p);
     const skuPos = String(p.skuPos || '').trim();
+    const campaign = inferCampaign(p);
+    const route = posRoute(p);
     $('result').className = 'result';
     $('result').innerHTML = `
       <div class="card">
         <div class="info">
-          <span class="badge">${p.base || 'Base Merch'}</span>
+          <span class="badge">${route}</span>
           <div class="title">${p.nombrePos || 'Sin nombre POS'}</div>
           <p class="desc">${p.descripcion || ''}</p>
           <div class="grid">
             <div class="field"><span>SKU leído</span><b>${sourceSku || p.skuIntl || '-'}</b></div>
-            <div class="field"><span>SKU INTL</span><b>${p.skuIntl || '-'}</b></div>
+            <div class="field campaign"><span>Campaña</span><b>${campaign}</b><em>${route}</em></div>
             <div class="field main"><span>SKU POS</span><b>${skuPos || '-'}</b></div>
             <div class="field"><span>Código DIA</span><b>${p.codigoDia || '-'}</b></div>
             <div class="field"><span>Botón POS</span><b>${p.botonPos || 'MERCH'}</b></div>
             <div class="field"><span>Precio</span><b class="price">${tiers[0] || '-'}</b></div>
           </div>
+          <div class="pos-help"><b>Ruta sugerida POS:</b> ${route}. Después escanea el código generado del SKU POS.</div>
         </div>
         <div class="scanbox">
           <div class="scan-title">Código para escanear en POS</div>

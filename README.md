@@ -1,13 +1,20 @@
 # CodeBrew Merch PWA
 
-Proyecto listo para GitHub Pages.
+Buscador PWA para merch: lee el `SKU #` de la etiqueta, busca el producto en la base, muestra campaña/ruta POS, SKU POS, precio y genera código de barras + QR con el SKU POS.
 
-## Corrección aplicada
-- `index.html` está en la raíz del proyecto.
-- El resultado devuelve **SKU POS**, **código de barras Code128 escaneable** y **QR de respaldo**.
-- El QR se genera previamente dentro de la base para que no dependa de librerías externas.
-- Búsqueda por SKU INTL / etiqueta `SKU # 011...`.
+## Uso en GitHub Pages
 
-## Carga en GitHub
-Sube el contenido de esta carpeta directo a tu repositorio `CodeBrew_Merch`.
-No subas solo `products.js` como `index.html`.
+1. Sube todos los archivos a un repositorio, respetando la raíz del proyecto.
+2. Activa GitHub Pages en `Settings > Pages`.
+3. Abre la URL HTTPS del sitio.
+4. Busca por cámara o escribe manualmente el SKU de etiqueta.
+
+## Flujo POS
+
+La tarjeta muestra la ruta sugerida, por ejemplo:
+
+- `Mercancía → World Cup`
+- `Mercancía → Spring`
+- `Mercancía → Discovery`
+
+Después escanea el código de barras generado. El código codifica únicamente el `SKU POS`.
