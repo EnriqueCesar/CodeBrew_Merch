@@ -3,35 +3,31 @@
   const products = window.PRODUCTS || [];
   const bySku = new Map(products.map(p => [normalizeSku(p.skuIntl), p]));
   let stream = null;
+  let currentProduct = null;
+  const labelItems = [];
 
-  function normalizeSku(value){
-    return String(value || '').replace(/\D/g,'').replace(/^0+/,'') || '';
-  }
-
-  function moneyTier(p){
-    const t = p.tier || {};
-    return Object.entries(t).filter(([,v]) => String(v || '').trim()).map(([k,v]) => `${k}: ${v}`);
-  }
+  function normalizeSku(value){ return String(value || '').replace(/\D/g,'').replace(/^0+/,'') || ''; }
+  function cleanMoney(v){ return String(v || '').trim(); }
+  function moneyTier(p){ return Object.entries(p.tier || {}).filter(([,v]) => cleanMoney(v)).map(([k,v]) => `${k}: ${v}`); }
+  function firstTier(p){ return moneyTier(p)[0] || '-'; }
 
   function inferCampaign(p){
     const name = String(p.nombrePos || p.nombreInventario || '').trim();
-    const base = String(p.base || '').toLowerCase();
-    if (/discovery|^disc|^totebag/i.test(name) || base.includes('discovery')) return 'Discovery';
-    if (/^wc/i.test(name)) return 'World Cup';
-    if (/^sp/i.test(name)) return 'Spring';
-    if (/^wt/i.test(name)) return 'Winter';
-    if (/^fl/i.test(name)) return 'Fall';
-    if (/^xm/i.test(name)) return 'Christmas';
-    if (/^cor/i.test(name)) return 'Essentials';
-    return p.campana || p.campaign || p.base || 'Campaña';
+    const upper = name.toUpperCase();
+    const base = String(p.base || '').toUpperCase();
+    if (base.includes('DISCOVERY') || upper.startsWith('DISC') || upper.startsWith('TOTEBAG')) return 'Discovery';
+    if (upper.startsWith('WC')) return 'World Cup';
+    if (upper.startsWith('SP')) return 'Spring';
+    if (upper.startsWith('WT')) return 'Winter';
+    if (upper.startsWith('COR')) return 'Essentials';
+    if (upper.startsWith('XM')) return 'Christmas';
+    if (upper.startsWith('FL')) return 'Fall';
+    if (upper.startsWith('SII') || upper.startsWith('SI')) return 'Summer';
+    return p.campana || p.campaign || 'Mercancía';
   }
 
-  function posRoute(p){
-    const campaign = inferCampaign(p);
-    const boton = String(p.botonPos || 'MERCH').replace(/\s+/g, ' ').trim();
-    const merchBtn = boton.includes('DISCOVERY') ? 'Mercancía → Discovery' : `Mercancía → ${campaign}`;
-    return merchBtn;
-  }
+  function posButton(p){ return inferCampaign(p); }
+  function routeText(p){ return `Mercancía → ${posButton(p)}`; }
 
   function extractSku(text){
     const clean = String(text || '').replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
@@ -41,20 +37,16 @@
     return any ? normalizeSku(any[0]) : '';
   }
 
-  // Code128-B: genera código de barras real para escanear el SKU POS en POS.
-  const CODE128 = [
-    '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132','221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313','231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111','314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111','111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141','114131','311141','411131','211412','211214','211232','2331112'
-  ];
+  const CODE128 = ['212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132','221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313','231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111','314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111','111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141','114131','311141','411131','211412','211214','211232','2331112'];
 
   function makeBarcodeSVG(value){
     const text = String(value || '').trim();
     if (!text) return '';
-    const codes = [104]; // Start B
+    const codes = [104];
     for (const ch of text) codes.push(ch.charCodeAt(0) - 32);
     let checksum = 104;
     for (let i = 1; i < codes.length; i++) checksum += codes[i] * i;
     codes.push(checksum % 103, 106);
-
     const height = 86, scale = 2;
     let x = 0, bars = '';
     for (const code of codes) {
@@ -68,31 +60,32 @@
     return `<svg class="barcode" viewBox="0 0 ${x} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Código de barras SKU POS ${text}">${bars}</svg>`;
   }
 
+  function productBySku(raw){ return bySku.get(normalizeSku(raw)); }
+
   function renderProduct(p, sourceSku){
-    const tiers = moneyTier(p);
+    currentProduct = p;
     const skuPos = String(p.skuPos || '').trim();
-    const campaign = inferCampaign(p);
-    const route = posRoute(p);
+    const boton = posButton(p);
     $('result').className = 'result';
     $('result').innerHTML = `
       <div class="card">
         <div class="info">
-          <span class="badge">${route}</span>
+          <span class="badge">${routeText(p)}</span>
           <div class="title">${p.nombrePos || 'Sin nombre POS'}</div>
           <p class="desc">${p.descripcion || ''}</p>
           <div class="grid">
             <div class="field"><span>SKU leído</span><b>${sourceSku || p.skuIntl || '-'}</b></div>
-            <div class="field campaign"><span>Campaña</span><b>${campaign}</b><em>${route}</em></div>
+            <div class="field"><span>Botón POS</span><b>${boton}</b><em>${routeText(p)}</em></div>
             <div class="field main"><span>SKU POS</span><b>${skuPos || '-'}</b></div>
             <div class="field"><span>Código DIA</span><b>${p.codigoDia || '-'}</b></div>
-            <div class="field"><span>Botón POS</span><b>${p.botonPos || 'MERCH'}</b></div>
-            <div class="field"><span>Precio</span><b class="price">${tiers[0] || '-'}</b></div>
+            <div class="field"><span>Nombre POS</span><b>${p.nombrePos || '-'}</b></div>
+            <div class="field"><span>Precio</span><b class="price">${firstTier(p)}</b></div>
           </div>
-          <div class="pos-help"><b>Ruta sugerida POS:</b> ${route}. Después escanea el código generado del SKU POS.</div>
+          <div class="pos-help"><b>Flujo POS:</b> Mercancía → ${boton} → escanear código generado.</div>
+          <div class="actions" style="margin-top:14px"><button id="addCurrentLabel">Agregar a etiquetado</button></div>
         </div>
         <div class="scanbox">
           <div class="scan-title">Código para escanear en POS</div>
-          <small>Codifica únicamente SKU POS: <b>${skuPos || '-'}</b></small>
           <div class="barcode-wrap">${makeBarcodeSVG(skuPos)}<div class="human">${skuPos || ''}</div></div>
           <div class="qr-wrap">
             ${p.qrData ? `<img src="${p.qrData}" alt="QR SKU POS ${skuPos}">` : '<div class="noqr">Sin QR</div>'}
@@ -100,9 +93,11 @@
           </div>
         </div>
       </div>`;
+    $('addCurrentLabel').addEventListener('click', () => { $('labelSku').value = p.skuIntl || sourceSku || ''; showTab('etiquetado'); renderLabelPreview(p); });
   }
 
   function renderNotFound(sku){
+    currentProduct = null;
     $('result').className = 'result notfound';
     $('result').innerHTML = `<div class="not-card"><div class="title">SKU no encontrado</div><p>Se leyó: <b>${sku || 'sin lectura'}</b></p><p class="desc">Valida que el OCR haya tomado completo el número después de “SKU #”.</p></div>`;
   }
@@ -113,62 +108,101 @@
     p ? renderProduct(p, raw) : renderNotFound(raw);
   }
 
+  function showTab(name){
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tabpage').forEach(p => p.classList.toggle('active', p.id === name));
+  }
+
+  function renderLabelPreview(p){
+    if (!p) { $('labelPreview').className = 'label-preview empty-small'; $('labelPreview').textContent = 'SKU no encontrado para etiquetado.'; return; }
+    $('labelPreview').className = 'label-preview';
+    $('labelPreview').innerHTML = `<div class="preview-card"><div><b>${posButton(p)}</b><small>${p.nombrePos || ''} · SKU POS ${p.skuPos || '-'}</small></div>${p.qrData ? `<img class="mini-qr" src="${p.qrData}" alt="QR">` : ''}</div>`;
+  }
+
+  function addLabel(rawSku, qty){
+    const p = productBySku(rawSku);
+    renderLabelPreview(p);
+    if (!p) return;
+    const safeQty = Math.max(1, Math.min(500, Number(qty) || 1));
+    const key = String(p.skuPos || p.skuIntl);
+    const existing = labelItems.find(x => String(x.product.skuPos || x.product.skuIntl) === key);
+    if (existing) existing.qty += safeQty; else labelItems.push({product:p, qty:safeQty});
+    renderCart();
+  }
+
+  function renderCart(){
+    const total = labelItems.reduce((a,x)=>a+x.qty,0);
+    $('totalLabels').textContent = total;
+    $('pdfLabels').disabled = total === 0;
+    if (!labelItems.length) { $('labelCart').className = 'cart empty-small'; $('labelCart').textContent = 'Sin etiquetas agregadas.'; return; }
+    $('labelCart').className = 'cart';
+    $('labelCart').innerHTML = labelItems.map((x,i)=>`
+      <div class="cart-row">
+        <div><strong>${posButton(x.product)}</strong><small>${x.product.nombrePos || ''}</small></div>
+        <div class="sku-col"><small>SKU POS</small><b>${x.product.skuPos || '-'}</b></div>
+        <input data-i="${i}" class="qtyEdit" type="number" min="1" max="500" value="${x.qty}">
+        <button class="remove" data-remove="${i}">×</button>
+      </div>`).join('');
+    document.querySelectorAll('.qtyEdit').forEach(inp => inp.addEventListener('change', e => { labelItems[Number(e.target.dataset.i)].qty = Math.max(1, Number(e.target.value)||1); renderCart(); }));
+    document.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', e => { labelItems.splice(Number(e.target.dataset.remove),1); renderCart(); }));
+  }
+
+  function generatePdf(){
+    if (!window.jspdf || !window.jspdf.jsPDF) { alert('No cargó el generador PDF. Revisa internet/CDN.'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({orientation:'portrait', unit:'in', format:'letter'});
+    const labelW = 2, labelH = 1.5, marginX = 0.25, marginY = 0.25, gapX = 0.08, gapY = 0.08;
+    const cols = 4, rows = 7;
+    let n = 0;
+    const expanded = [];
+    labelItems.forEach(item => { for(let i=0;i<item.qty;i++) expanded.push(item.product); });
+    expanded.forEach((p,idx) => {
+      if (idx > 0 && n % (cols*rows) === 0) doc.addPage();
+      const pos = n % (cols*rows), col = pos % cols, row = Math.floor(pos / cols);
+      const x = marginX + col * (labelW + gapX), y = marginY + row * (labelH + gapY);
+      doc.setDrawColor(190,170,130); doc.setLineWidth(0.01); doc.roundedRect(x,y,labelW,labelH,0.08,0.08);
+      doc.setFont('helvetica','bold'); doc.setTextColor(0,72,51); doc.setFontSize(13);
+      const title = posButton(p);
+      doc.text(title, x + labelW/2, y + 0.24, {align:'center', maxWidth:labelW-0.16});
+      if (p.qrData) doc.addImage(p.qrData, 'PNG', x + 0.48, y + 0.38, 1.04, 1.04);
+      n++;
+    });
+    doc.save(`CodeBrew_Etiquetas_${expanded.length}_pzas.pdf`);
+  }
+
   function init(){
-    $('countProducts').textContent = products.length;
+    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
     $('manualBtn').addEventListener('click', () => searchSku($('manualSku').value));
     $('manualSku').addEventListener('keydown', e => { if(e.key === 'Enter') searchSku(e.target.value); });
+    $('labelAddBtn').addEventListener('click', () => addLabel($('labelSku').value, $('labelQty').value));
+    $('labelSku').addEventListener('keydown', e => { if(e.key === 'Enter') addLabel(e.target.value, $('labelQty').value); });
+    $('labelSku').addEventListener('input', e => renderLabelPreview(productBySku(e.target.value)));
+    $('clearLabels').addEventListener('click', () => { labelItems.length = 0; renderCart(); });
+    $('pdfLabels').addEventListener('click', generatePdf);
 
     $('startCamera').addEventListener('click', async () => {
       try{
         stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}, audio:false});
-        $('video').srcObject = stream;
-        await $('video').play();
-        $('scanBtn').disabled = false;
-        $('stopCamera').disabled = false;
-        $('startCamera').disabled = true;
-        $('ocrStatus').textContent = 'Cámara activa';
-      }catch(err){
-        $('ocrStatus').textContent = 'Sin permiso de cámara';
-        alert('No se pudo abrir la cámara. En GitHub Pages debe abrirse con HTTPS y permiso de cámara.');
-      }
+        $('video').srcObject = stream; await $('video').play();
+        $('scanBtn').disabled = false; $('stopCamera').disabled = false; $('startCamera').disabled = true; $('ocrStatus').textContent = 'Cámara activa';
+      }catch(err){ $('ocrStatus').textContent = 'Sin permiso de cámara'; alert('No se pudo abrir la cámara. En GitHub Pages debe abrirse con HTTPS y permiso de cámara.'); }
     });
-
     $('stopCamera').addEventListener('click', () => {
-      if(stream) stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      $('video').srcObject = null;
-      $('scanBtn').disabled = true;
-      $('stopCamera').disabled = true;
-      $('startCamera').disabled = false;
-      $('ocrStatus').textContent = 'Listo';
+      if(stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('video').srcObject = null;
+      $('scanBtn').disabled = true; $('stopCamera').disabled = true; $('startCamera').disabled = false; $('ocrStatus').textContent = 'Listo';
     });
-
     $('scanBtn').addEventListener('click', async () => {
       const video = $('video'), canvas = $('snapshot'), ctx = canvas.getContext('2d');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      $('ocrStatus').textContent = 'Leyendo texto...';
-      $('scanBtn').disabled = true;
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      $('ocrStatus').textContent = 'Leyendo texto...'; $('scanBtn').disabled = true;
       try{
         if (!window.Tesseract) throw new Error('OCR no cargó');
-        const { data:{ text } } = await Tesseract.recognize(canvas, 'eng', {
-          logger:m => { if(m.status) $('ocrStatus').textContent = Math.round((m.progress || 0) * 100) + '% OCR'; }
-        });
-        const sku = extractSku(text);
-        $('manualSku').value = sku;
-        sku ? searchSku(sku) : renderNotFound('');
-      }catch(e){
-        renderNotFound('Error OCR');
-      }
-      $('ocrStatus').textContent = 'Listo';
-      $('scanBtn').disabled = false;
+        const { data:{ text } } = await Tesseract.recognize(canvas, 'eng', { logger:m => { if(m.status) $('ocrStatus').textContent = Math.round((m.progress || 0) * 100) + '% OCR'; }});
+        const sku = extractSku(text); $('manualSku').value = sku; sku ? searchSku(sku) : renderNotFound('');
+      }catch(e){ renderNotFound('Error OCR'); }
+      $('ocrStatus').textContent = 'Listo'; $('scanBtn').disabled = false;
     });
-
-    if('serviceWorker' in navigator){
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
-    }
+    if('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
   }
-
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

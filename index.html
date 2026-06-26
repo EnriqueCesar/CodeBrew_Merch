@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#006241" />
-  <title>CodeBrew · Buscador de Merch</title>
+  <title>CodeBrew 2.0 · Merch POS</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
   <script src="data/products.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -15,39 +16,73 @@
   <header class="hero">
     <img src="assets/icon-192.png" alt="CodeBrew" class="logo">
     <div>
-      <h1>CodeBrew</h1>
-      <p>Buscador de códigos · Merch</p>
+      <h1>CodeBrew <span>2.0</span></h1>
+      <p>Buscador de códigos · Merch POS</p>
     </div>
   </header>
 
+  <nav class="tabs" aria-label="Pestañas">
+    <button class="tab active" data-tab="consulta">Consulta</button>
+    <button class="tab" data-tab="etiquetado">Etiquetado</button>
+  </nav>
+
   <main>
-    <section class="panel search-panel">
-      <label for="manualSku">SKU # de etiqueta</label>
-      <div class="search-row">
-        <input id="manualSku" inputmode="numeric" placeholder="Ej. 011178945" autocomplete="off" />
-        <button id="manualBtn">Buscar</button>
-      </div>
-      <small>La app lee el número después de <b>SKU #</b> y elimina ceros iniciales automáticamente.</small>
+    <section id="consulta" class="tabpage active">
+      <section class="panel search-panel">
+        <label for="manualSku">SKU # de etiqueta</label>
+        <div class="search-row">
+          <input id="manualSku" inputmode="numeric" placeholder="Ej. 011178945" autocomplete="off" />
+          <button id="manualBtn">Buscar</button>
+        </div>
+        <small>Lee el número después de <b>SKU #</b> y elimina ceros iniciales automáticamente.</small>
+      </section>
+
+      <section class="panel camera-panel">
+        <div class="camera-head"><h2>Escaneo por cámara</h2><span id="ocrStatus">Listo</span></div>
+        <video id="video" playsinline muted></video>
+        <canvas id="snapshot" hidden></canvas>
+        <div class="actions">
+          <button id="startCamera">Abrir cámara</button>
+          <button id="scanBtn" disabled>Leer SKU #</button>
+          <button id="stopCamera" disabled>Detener</button>
+        </div>
+        <p class="hint">Enfoca la etiqueta donde diga <b>SKU # 011...</b>. Si no reconoce, escribe el número manualmente.</p>
+      </section>
+
+      <section id="result" class="result empty">
+        <div class="empty-card">Escanea o escribe un SKU para ver botón POS, precio, código de barras y QR.</div>
+      </section>
     </section>
 
-    <section class="panel camera-panel">
-      <div class="camera-head"><h2>Escaneo por cámara</h2><span id="ocrStatus">Listo</span></div>
-      <video id="video" playsinline muted></video>
-      <canvas id="snapshot" hidden></canvas>
-      <div class="actions">
-        <button id="startCamera">Abrir cámara</button>
-        <button id="scanBtn" disabled>Leer SKU #</button>
-        <button id="stopCamera" disabled>Detener</button>
-      </div>
-      <p class="hint">Enfoca la etiqueta donde diga <b>SKU # 011...</b>. Si no reconoce, escribe el número manualmente.</p>
-    </section>
+    <section id="etiquetado" class="tabpage">
+      <section class="panel label-panel">
+        <h2>Generador de etiquetas POS</h2>
+        <p class="hint">Etiqueta final: <b>2 pulgadas x 1.5 pulgadas</b>. Solo imprime <b>Botón POS</b> + <b>QR</b> con SKU POS.</p>
+        <div class="label-grid">
+          <div>
+            <label for="labelSku">SKU # de etiqueta</label>
+            <input id="labelSku" inputmode="numeric" placeholder="Ej. 011178945" autocomplete="off" />
+          </div>
+          <div>
+            <label for="labelQty">Piezas</label>
+            <input id="labelQty" inputmode="numeric" type="number" min="1" max="500" value="1" />
+          </div>
+          <div class="align-end"><button id="labelAddBtn">Agregar etiquetas</button></div>
+        </div>
+        <div id="labelPreview" class="label-preview empty-small">Busca o agrega un SKU para preparar etiquetas.</div>
+      </section>
 
-    <section id="result" class="result empty">
-      <div class="empty-card">Escanea o escribe un SKU para ver campaña, ruta POS, precio, código de barras y QR.</div>
-    </section>
-
-    <section class="panel mini">
-      <b>Base cargada:</b> <span id="countProducts"></span> productos · campañas merch con ruta POS y código escaneable.
+      <section class="panel cart-panel">
+        <div class="cart-head">
+          <h2>Plantilla de etiquetas</h2>
+          <div><b id="totalLabels">0</b> etiquetas</div>
+        </div>
+        <div id="labelCart" class="cart empty-small">Sin etiquetas agregadas.</div>
+        <div class="actions right">
+          <button id="clearLabels" class="ghost">Limpiar</button>
+          <button id="pdfLabels" disabled>Generar PDF</button>
+        </div>
+      </section>
     </section>
   </main>
 </body>
