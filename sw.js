@@ -1,4 +1,16 @@
-const CACHE='codebrew-v1';
-const ASSETS=['./','./index.html','./styles.css','./app.js','./data/products.js','./manifest.webmanifest','./assets/icon-192.png','./assets/icon-512.png'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
-self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+# CodeBrew · Buscador de Merch
+
+PWA lista para GitHub Pages. Busca el `SKU #` impreso en etiquetas, cruza contra `SKU INTL`, devuelve ficha POS, precio y QR con el `SKU POS`.
+
+## Uso
+1. Sube todos los archivos a un repositorio GitHub.
+2. Activa GitHub Pages en Settings → Pages.
+3. Abre la URL HTTPS en celular.
+4. Presiona **Abrir cámara** y enfoca la etiqueta donde aparece `SKU #`.
+
+## Bases incluidas
+- Lista de precios merch WC 2026 WK 26 C1
+- Lista de precios Discovery Winter 2026
+
+## Nota
+El OCR usa Tesseract.js por CDN y el QR usa qrcode.js por CDN. En GitHub Pages funcionará con internet y HTTPS.

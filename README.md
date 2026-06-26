@@ -1,16 +1,53 @@
-# CodeBrew · Buscador de Merch
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#006241" />
+  <title>CodeBrew · Buscador de Merch</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+  <header class="hero">
+    <img src="assets/icon-192.png" alt="CodeBrew" class="logo">
+    <div><h1>CodeBrew</h1><p>Buscador de códigos · Merch</p></div>
+  </header>
 
-PWA lista para GitHub Pages. Busca el `SKU #` impreso en etiquetas, cruza contra `SKU INTL`, devuelve ficha POS, precio y QR con el `SKU POS`.
+  <main>
+    <section class="panel search-panel">
+      <label for="manualSku">SKU INTL / SKU # de etiqueta</label>
+      <div class="search-row">
+        <input id="manualSku" inputmode="numeric" placeholder="Ej. 011178945" autocomplete="off" />
+        <button id="manualBtn">Buscar</button>
+      </div>
+      <small>Busca el número posterior a <b>SKU #</b>. La app elimina ceros iniciales automáticamente.</small>
+    </section>
 
-## Uso
-1. Sube todos los archivos a un repositorio GitHub.
-2. Activa GitHub Pages en Settings → Pages.
-3. Abre la URL HTTPS en celular.
-4. Presiona **Abrir cámara** y enfoca la etiqueta donde aparece `SKU #`.
+    <section class="panel camera-panel">
+      <div class="camera-head"><h2>Escaneo por cámara</h2><span id="ocrStatus">Listo</span></div>
+      <video id="video" playsinline muted></video>
+      <canvas id="snapshot" hidden></canvas>
+      <div class="actions">
+        <button id="startCamera">Abrir cámara</button>
+        <button id="scanBtn" disabled>Leer SKU #</button>
+        <button id="stopCamera" disabled>Detener</button>
+      </div>
+      <p class="hint">Enfoca solo la etiqueta donde diga <b>SKU # 011...</b> y presiona “Leer SKU #”.</p>
+    </section>
 
-## Bases incluidas
-- Lista de precios merch WC 2026 WK 26 C1
-- Lista de precios Discovery Winter 2026
+    <section id="result" class="result empty">
+      <div class="empty-card">Escanea o escribe un SKU para ver ficha POS, precio y QR.</div>
+    </section>
 
-## Nota
-El OCR usa Tesseract.js por CDN y el QR usa qrcode.js por CDN. En GitHub Pages funcionará con internet y HTTPS.
+    <section class="panel mini">
+      <b>Base cargada:</b> <span id="countProducts"></span> productos · WC / Merch C1 + Discovery Winter 2026.
+    </section>
+  </main>
+
+  <script src="data/products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

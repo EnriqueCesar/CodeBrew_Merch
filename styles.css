@@ -1,1 +1,20 @@
-:root{--green:#006241;--deep:#003c2f;--cream:#f8f3ea;--gold:#b9985a;--ink:#1f2a24;--muted:#68746d;--card:#fffaf2;--danger:#ad2f2f}*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,var(--cream),#fff);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}.hero{padding:22px 18px 14px;background:var(--green);color:white;display:flex;gap:14px;align-items:center;box-shadow:0 8px 20px rgba(0,0,0,.18)}.logo{width:62px;height:62px;border-radius:18px;background:white}.hero h1{margin:0;font-size:2rem;letter-spacing:.5px}.hero p{margin:2px 0 0;opacity:.9;letter-spacing:2px;text-transform:uppercase;font-size:.75rem}main{max-width:920px;margin:auto;padding:16px}.panel,.result{background:rgba(255,250,242,.92);border:1px solid #eadfcd;border-radius:22px;padding:16px;margin:14px 0;box-shadow:0 8px 26px rgba(0,0,0,.07)}label,h2{font-weight:800;color:var(--deep)}h2{margin:0;font-size:1.1rem}.search-row{display:flex;gap:10px;margin:8px 0}input{flex:1;border:2px solid #d9ccb7;border-radius:16px;padding:15px;font-size:1.15rem;background:white}button{border:0;background:var(--green);color:white;border-radius:16px;padding:13px 16px;font-weight:800;font-size:.98rem;cursor:pointer}button:disabled{background:#9aa6a0;cursor:not-allowed}small,.hint{color:var(--muted)}.camera-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}#ocrStatus{background:#e6f3ec;color:var(--deep);padding:7px 10px;border-radius:999px;font-size:.8rem;font-weight:700}video{width:100%;max-height:54vh;background:#16221d;border-radius:18px;object-fit:cover;border:3px solid #d9ccb7}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.empty-card{text-align:center;color:var(--muted);padding:25px}.card{display:grid;grid-template-columns:1fr;gap:14px}.badge{display:inline-flex;background:var(--deep);color:white;border-radius:999px;padding:6px 10px;font-weight:800;font-size:.8rem}.title{font-size:1.35rem;font-weight:900;color:var(--deep);margin:8px 0 2px}.desc{color:var(--muted);margin:0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{background:white;border:1px solid #eadfcd;border-radius:16px;padding:12px}.field span{display:block;color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.8px}.field b{font-size:1.1rem;color:var(--ink)}.price{font-size:1.7rem!important;color:var(--green)!important}.qrbox{display:flex;gap:16px;align-items:center;justify-content:space-between;background:white;border:2px dashed var(--gold);border-radius:18px;padding:14px}.qrbox canvas{width:132px!important;height:132px!important}.notfound{border-color:#f1c3bd;background:#fff6f4}.notfound .title{color:var(--danger)}.mini{font-size:.9rem}@media(min-width:760px){.card{grid-template-columns:1.2fr .8fr}.qrbox{grid-row:span 2;flex-direction:column;text-align:center}.search-panel{position:sticky;top:0;z-index:3}.grid{grid-template-columns:repeat(3,1fr)}}
+{
+  "name": "CodeBrew Buscador de Merch",
+  "short_name": "CodeBrew",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f3ea",
+  "theme_color": "#006241",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
