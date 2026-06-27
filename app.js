@@ -15,6 +15,16 @@
   function priceLabel(p, tier){ const keys = tierKeys(p); const k = keys.includes(tier) ? tier : (keys[0] || 'C1'); const price = p.tier?.[k] || ''; return price ? `${k}: ${price}` : '-'; }
   function priceOnly(p, tier){ return priceFor(p, tier) || '-'; }
   function qrValue(p){ return String(p?.skuPos || p?.botonPos || p?.nombrePos || '').trim(); }
+  function routeText(p){ return `Mercancía → ${p?.botonPos || 'Botón POS'}`; }
+  function posStepsHtml(p){
+    const btn = p?.botonPos || 'Botón POS';
+    return `<div class="pos-flow-title">Ayuda visual POS</div>
+      <div class="pos-flow-visual">
+        <div class="pos-step"><b>1</b><span><strong>Identifica Mercancía</strong><br><span class="pos-chip">Mercancía</span></span></div>
+        <div class="pos-step"><b>2</b><span><strong>Abre el botón correcto</strong><br><span class="pos-chip">${btn}</span></span></div>
+        <div class="pos-step"><b>3</b><span><strong>Escanea el código</strong><br>Usa el código de esta ficha en el POS.</span></div>
+      </div>`;
+  }
 
   const numericIndex = new Map();
   products.forEach(p => {
@@ -99,6 +109,7 @@
         <div class="scanbox">
           <div class="scan-title">Código para escanear en POS</div>
           <div class="barcode-wrap">${makeBarcodeSVG(skuPos)}<div class="human">${skuPos || ''}</div></div>
+          ${posStepsHtml(p)}
         </div>
       </div>`;
     const tierSelect = $('tierSelect');
@@ -179,9 +190,9 @@
       doc.setTextColor(35,43,38); doc.setFont('helvetica','normal'); doc.setFontSize(6.7);
       const line = `${p.nombrePos || ''} | ${priceOnly(p, tier)}`;
       doc.text(doc.splitTextToSize(line, labelW - 0.14).slice(0,2), x + labelW/2, y + 0.36, {align:'center'});
-      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(0,72,51);
-      doc.text(`SKU ${sku || '-'}`, x + labelW/2, y + 0.57, {align:'center', maxWidth:labelW-0.14});
-      const qr = qrDataUrl(sku, 300); if (qr) doc.addImage(qr, 'PNG', x + 0.63, y + 0.66, 0.74, 0.74);
+      doc.setFont('helvetica','bold'); doc.setFontSize(11.5); doc.setTextColor(0,72,51);
+      doc.text(`SKU ${sku || '-'}`, x + labelW/2, y + 0.60, {align:'center', maxWidth:labelW-0.14});
+      const qr = qrDataUrl(sku, 340); if (qr) doc.addImage(qr, 'PNG', x + 0.58, y + 0.70, 0.84, 0.74);
     });
     doc.save(`CodeBrew_Etiquetas_${expanded.length}_pzas.pdf`);
   }

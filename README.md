@@ -13,3 +13,9 @@ PWA lista para GitHub Pages.
 
 ## Uso
 Sube todo el contenido del ZIP al repositorio `CodeBrew_Merch` en GitHub Pages.
+
+
+## Actualización visual
+- Guía rápida en Consulta: escanear SKU, validar item y flujo POS.
+- Ayuda visual debajo del código: Mercancía → Botón POS → Escanear código.
+- Base actualizada desde Lista_Precios_Base(1).xlsx.

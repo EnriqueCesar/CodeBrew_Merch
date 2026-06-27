@@ -1,4 +1,4 @@
-const CACHE_NAME = 'codebrew-merch-v2-final-20260626';
+const CACHE_NAME = 'codebrew-merch-v2-visual-20260627-01';
 const ASSETS = ['./','index.html','styles.css','app.js','manifest.webmanifest','data/products.js','assets/icon-192.png','assets/icon-512.png'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())));
