@@ -14,3 +14,10 @@
 .pos-chip{display:inline-block;background:#e8f3ee;color:var(--green);border-radius:999px;padding:4px 9px;font-weight:900;margin-top:3px}
 .label-intro{margin:6px 0 12px;color:#42554d;background:#f2eadb;padding:12px 14px;border-radius:14px}
 @media(max-width:760px){.quick-steps{grid-template-columns:1fr}.pos-flow-visual{grid-template-columns:1fr}.scan-title{font-size:21px}}
+
+/* Consulta precio antes */
+.price-warning{display:flex;gap:16px;align-items:flex-start;background:linear-gradient(135deg,#fff8e6,#fff);border-color:#e2b76b}
+.warning-icon{display:grid;place-items:center;min-width:44px;height:44px;border-radius:50%;background:#8b5e18;color:white;font-size:28px;font-weight:900}
+.price-warning h2{margin:0 0 6px;color:#6d430a;font-size:24px}
+.price-warning p{margin:5px 0;color:#463b2d;font-size:17px;line-height:1.35}
+.price-warning span{display:inline-block;background:#8b5e18;color:white;border-radius:8px;padding:3px 8px;margin:0 3px}

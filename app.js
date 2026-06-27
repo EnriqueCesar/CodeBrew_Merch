@@ -4,7 +4,7 @@
   let stream = null;
   let labelStream = null;
   let currentProduct = null;
-  let currentTier = 'C1';
+  let currentTier = 'C2';
   const labelItems = [];
 
   function normalizeSku(value){ return String(value || '').replace(/[^0-9]/g,'').replace(/^0+/,'') || ''; }
@@ -16,6 +16,7 @@
   function priceOnly(p, tier){ return priceFor(p, tier) || '-'; }
   function qrValue(p){ return String(p?.skuPos || p?.botonPos || p?.nombrePos || '').trim(); }
   function routeText(p){ return `Mercancía → ${p?.botonPos || 'Botón POS'}`; }
+  function looksEssentialQuery(value){ return /\bCOR(?:23|24|25|26)/i.test(String(value || '')); }
   function posStepsHtml(p){
     const btn = p?.botonPos || 'Botón POS';
     return `<div class="pos-flow-title">Ayuda visual POS</div>
@@ -120,7 +121,8 @@
   function renderNotFound(q){
     currentProduct = null;
     $('result').className = 'result notfound';
-    $('result').innerHTML = `<div class="not-card"><div class="title">No encontrado</div><p>Se buscó: <b>${q || 'sin lectura'}</b></p><p class="desc">Prueba con SKU #, Código DIA, SKU POS, Nombre POS o Nombre Inventario.</p></div>`;
+    const essential = looksEssentialQuery(q);
+    $('result').innerHTML = `<div class="not-card"><div class="title">${essential ? 'Essentials / método no se etiqueta como Merch' : 'Artículo no encontrado'}</div><p>Se buscó: <b>${q || 'sin lectura'}</b></p><p class="desc">${essential ? 'Los códigos COR23, COR24, COR25 y COR26 pertenecen a métodos / Essentials. Para Merch, busca SKU #, Código DIA, SKU POS, Nombre POS o Nombre Inventario.' : 'Verifica SKU #, Código DIA, SKU POS, Nombre POS o Nombre Inventario. Si es producto nuevo, actualiza la Base de Precios.'}</p></div>`;
   }
 
   function search(raw){ const p = findProduct(raw); p ? renderProduct(p, raw) : renderNotFound(raw); }
@@ -132,7 +134,8 @@
 
   function updateLabelTier(p){
     const sel = $('labelTier'); const keys = p ? tierKeys(p) : ['C1'];
-    sel.innerHTML = (keys.length ? keys : ['C1']).map(k => `<option value="${k}">${k}${p?.tier?.[k] ? ' · '+p.tier[k] : ''}</option>`).join('');
+    sel.innerHTML = (keys.length ? keys : ['C2']).map(k => `<option value="${k}">${k}${p?.tier?.[k] ? ' · '+p.tier[k] : ''}</option>`).join('');
+    if (p && keys.includes('C2')) sel.value = 'C2';
     sel.disabled = !p || keys.length <= 1;
   }
 
